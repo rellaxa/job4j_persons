@@ -1,4 +1,4 @@
-package ru.job4j.url;
+package ru.job4j.url.filter;
 
 import com.auth0.jwt.JWT;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -33,7 +33,6 @@ public class JWTAuthenticationFilter extends UsernamePasswordAuthenticationFilte
 
 	public JWTAuthenticationFilter(AuthenticationManager auth) {
 		this.auth = auth;
-		System.out.println("JWTAuthenticationFilter is created");
 	}
 
 	@Override
@@ -42,7 +41,7 @@ public class JWTAuthenticationFilter extends UsernamePasswordAuthenticationFilte
 		try {
 			Person creds = new ObjectMapper()
 					.readValue(req.getInputStream(), Person.class);
-
+			logger.info("Person from request: " + creds.toString());
 			return auth.authenticate(
 					new UsernamePasswordAuthenticationToken(
 							creds.getUsername(),
@@ -64,6 +63,8 @@ public class JWTAuthenticationFilter extends UsernamePasswordAuthenticationFilte
 				.withSubject(((User) auth.getPrincipal()).getUsername())
 				.withExpiresAt(new Date(System.currentTimeMillis() + EXPIRATION_TIME))
 				.sign(HMAC512(SECRET.getBytes()));
+		logger.info("JWT token created: " + token);
 		res.addHeader(HEADER_STRING, TOKEN_PREFIX + token);
+		logger.info("JWT token added to response: " + res);
 	}
 }

@@ -19,7 +19,6 @@ public class UserController {
 
 	@PostMapping("/sign-up")
 	public void signUp(@RequestBody Person person) {
-		System.out.println("Sign-up method called: " + person);
 		person.setPassword(encoder.encode(person.getPassword()));
 		users.save(person);
 	}

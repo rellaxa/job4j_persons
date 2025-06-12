@@ -1,4 +1,4 @@
-package ru.job4j.url;
+package ru.job4j.url.filter;
 
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.algorithms.Algorithm;
@@ -14,15 +14,14 @@ import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.ArrayList;
 
-import static ru.job4j.url.JWTAuthenticationFilter.HEADER_STRING;
-import static ru.job4j.url.JWTAuthenticationFilter.SECRET;
-import static ru.job4j.url.JWTAuthenticationFilter.TOKEN_PREFIX;
+import static ru.job4j.url.filter.JWTAuthenticationFilter.HEADER_STRING;
+import static ru.job4j.url.filter.JWTAuthenticationFilter.SECRET;
+import static ru.job4j.url.filter.JWTAuthenticationFilter.TOKEN_PREFIX;
 
 public class JWTAuthorizationFilter extends BasicAuthenticationFilter {
 
 	public JWTAuthorizationFilter(AuthenticationManager authManager) {
 		super(authManager);
-		System.out.println("JWTAuthorizationFilter is created");
 	}
 
 	@Override
@@ -31,14 +30,14 @@ public class JWTAuthorizationFilter extends BasicAuthenticationFilter {
 									FilterChain chain) throws IOException, ServletException {
 
 		String header = req.getHeader(HEADER_STRING);
-
+		logger.info("Header from Authorization: " + header);
 		if (header == null || !header.startsWith(TOKEN_PREFIX)) {
 			chain.doFilter(req, res);
 			return;
 		}
 
 		UsernamePasswordAuthenticationToken authentication = getAuthentication(req);
-
+		logger.info("JWT token found: " + authentication);
 		SecurityContextHolder.getContext().setAuthentication(authentication);
 		chain.doFilter(req, res);
 	}
@@ -51,7 +50,7 @@ public class JWTAuthorizationFilter extends BasicAuthenticationFilter {
 					.build()
 					.verify(token.replace(TOKEN_PREFIX, ""))
 					.getSubject();
-
+			logger.info("User from token: " + user);
 			if (user != null) {
 				return new UsernamePasswordAuthenticationToken(user, null, new ArrayList<>());
 			}

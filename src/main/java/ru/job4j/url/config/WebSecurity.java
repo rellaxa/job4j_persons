@@ -15,12 +15,12 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import org.springframework.context.annotation.Bean;
-import ru.job4j.url.JWTAuthenticationFilter;
-import ru.job4j.url.JWTAuthorizationFilter;
+import ru.job4j.url.filter.JWTAuthenticationFilter;
+import ru.job4j.url.filter.JWTAuthorizationFilter;
 import ru.job4j.url.service.UserDetailsServiceImpl;
 
 import static org.springframework.security.config.Customizer.withDefaults;
-import static ru.job4j.url.JWTAuthenticationFilter.SIGN_UP_URL;
+import static ru.job4j.url.filter.JWTAuthenticationFilter.SIGN_UP_URL;
 
 @Configuration
 @EnableWebSecurity
@@ -32,19 +32,23 @@ public class WebSecurity {
 
 	public WebSecurity(UserDetailsServiceImpl userDetailsService,
 					   BCryptPasswordEncoder bCryptPasswordEncoder) {
-		System.out.println("WebSecurity is created");
 		this.userDetailsService = userDetailsService;
 		this.bCryptPasswordEncoder = bCryptPasswordEncoder;
+		System.out.println("WebSecurity is created");
 	}
 
 	@Bean
 	public SecurityFilterChain securityFilterChain(HttpSecurity http,
 												   AuthenticationManager authManager) throws Exception {
+
+		JWTAuthenticationFilter authFilter = new JWTAuthenticationFilter(authManager);
+		JWTAuthorizationFilter authorizationFilter = new JWTAuthorizationFilter(authManager);
+
 		http
 				.cors(withDefaults())
 				.csrf(csrf -> csrf.disable())
-				.httpBasic(basic -> basic.disable())
-				.formLogin(login -> login.disable())
+				.addFilter(authFilter)
+				.addFilter(authorizationFilter)
 				.sessionManagement(session -> session
 						.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 
@@ -52,11 +56,6 @@ public class WebSecurity {
 						.requestMatchers(HttpMethod.POST, SIGN_UP_URL).permitAll()
 						.anyRequest().authenticated()
 				);
-
-		JWTAuthenticationFilter authFilter = new JWTAuthenticationFilter(authManager);
-		JWTAuthorizationFilter authorizationFilter = new JWTAuthorizationFilter(authManager);
-		http.addFilter(authFilter);
-		http.addFilter(authorizationFilter);
 
 		return http.build();
 	}
@@ -66,7 +65,6 @@ public class WebSecurity {
 			AuthenticationConfiguration authenticationConfiguration) throws Exception {
 		return authenticationConfiguration.getAuthenticationManager();
 	}
-
 
 	@Bean
 	CorsConfigurationSource corsConfigurationSource() {
