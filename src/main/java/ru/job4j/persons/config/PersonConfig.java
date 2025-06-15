@@ -1,47 +1,41 @@
-package ru.job4j.url.config;
+package ru.job4j.persons.config;
 
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.stereotype.Component;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
-import org.springframework.context.annotation.Bean;
-import ru.job4j.url.filter.JWTAuthenticationFilter;
-import ru.job4j.url.filter.JWTAuthorizationFilter;
-import ru.job4j.url.service.UserDetailsServiceImpl;
+import ru.job4j.persons.filter.JWTAuthenticationFilter;
+import ru.job4j.persons.filter.JWTAuthorizationFilter;
 
 import static org.springframework.security.config.Customizer.withDefaults;
-import static ru.job4j.url.filter.JWTAuthenticationFilter.SIGN_UP_URL;
+import static ru.job4j.persons.filter.JWTAuthenticationFilter.SIGN_UP_URL;
 
 @Configuration
 @EnableWebSecurity
-public class WebSecurity {
-
-	public WebSecurity() {
-		System.out.println("WebSecurity is created");
-	}
+public class PersonConfig {
 
 	@Bean
 	public SecurityFilterChain securityFilterChain(HttpSecurity http,
-												   AuthenticationManager authManager) throws Exception {
-
-		JWTAuthenticationFilter authFilter = new JWTAuthenticationFilter(authManager);
-		JWTAuthorizationFilter authorizationFilter = new JWTAuthorizationFilter(authManager);
+												   AuthenticationManager auth) throws Exception {
+		JWTAuthenticationFilter authentFilter = new JWTAuthenticationFilter(auth);
+		JWTAuthorizationFilter authorizFilter = new JWTAuthorizationFilter(auth);
 
 		http
 				.cors(withDefaults())
 				.csrf(csrf -> csrf.disable())
-				.addFilter(authFilter)
-				.addFilter(authorizationFilter)
+				.addFilter(authentFilter)
+				.addFilter(authorizFilter)
 				.sessionManagement(session -> session
 						.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 
@@ -51,12 +45,12 @@ public class WebSecurity {
 				);
 
 		return http.build();
+
 	}
 
 	@Bean
-	public AuthenticationManager authenticationManager(
-			AuthenticationConfiguration authenticationConfiguration) throws Exception {
-		return authenticationConfiguration.getAuthenticationManager();
+	public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
+		return config.getAuthenticationManager();
 	}
 
 	@Bean
