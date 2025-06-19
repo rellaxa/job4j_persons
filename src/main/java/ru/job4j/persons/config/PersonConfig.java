@@ -41,6 +41,7 @@ public class PersonConfig {
 
 				.authorizeHttpRequests(authz -> authz
 						.requestMatchers(HttpMethod.POST, SIGN_UP_URL).permitAll()
+						.requestMatchers("/error").permitAll()
 						.anyRequest().authenticated()
 				);
 

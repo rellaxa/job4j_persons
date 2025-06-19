@@ -14,7 +14,7 @@ import org.springframework.security.web.authentication.www.BasicAuthenticationFi
 import java.io.IOException;
 import java.util.ArrayList;
 
-import static ru.job4j.url.filter.JWTAuthenticationFilter.*;
+import static ru.job4j.persons.filter.JWTAuthenticationFilter.*;
 
 public class JWTAuthorizationFilter extends BasicAuthenticationFilter {
 
