@@ -1,12 +1,9 @@
 package ru.job4j.persons.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import jakarta.persistence.EntityExistsException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.AllArgsConstructor;
-import lombok.extern.log4j.Log4j;
-import org.postgresql.util.PSQLException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -16,14 +13,12 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 import ru.job4j.persons.domain.Person;
-import ru.job4j.persons.repository.PersonRepository;
+import ru.job4j.persons.dto.PasswordDto;
 import ru.job4j.persons.service.PersonService;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Optional;
 
 @RestController
 @RequestMapping("/person")
@@ -93,10 +88,32 @@ public class PersonController {
 				);
 	}
 
+	@PatchMapping("/updatePassword")
+	public Person updatePassword(@RequestBody PasswordDto personPassword) {
+		var userId = personPassword.getUserId();
+		System.out.println(userId);
+		if (userId < 1) {
+			throw new IllegalArgumentException("Person id must not be less than one.");
+		}
+		if (personPassword.getPassword() == null || personPassword.getPassword().isEmpty()) {
+			throw new IllegalArgumentException("Password is required and cannot be empty.");
+		}
+		var personOptional = personService.findById(userId);
+		if (personOptional.isEmpty()) {
+			throw new ResponseStatusException(
+					HttpStatus.NOT_FOUND, "Person is not found. Please, check id."
+			);
+		}
+		var foundPerson = personOptional.get();
+		foundPerson.setPassword(encoder.encode(personPassword.getPassword()));
+		personService.update(foundPerson);
+		return foundPerson;
+	}
+
 	@DeleteMapping("/delete/{id}")
 	public ResponseEntity<String> delete(@PathVariable int id) {
 		if (id < 1) {
-			throw new IllegalArgumentException("Person id must not less than one.");
+			throw new IllegalArgumentException("Person id must not be less than one.");
 		}
 		Person person = new Person();
 		person.setId(id);
@@ -109,8 +126,8 @@ public class PersonController {
 	}
 
 	@ExceptionHandler(value = {IllegalArgumentException.class, DataIntegrityViolationException.class})
-	public void illegalHandler(Exception e, HttpServletRequest request,
-							   HttpServletResponse response) throws IOException {
+	public void exceptionHandler(Exception e, HttpServletRequest request,
+								 HttpServletResponse response) throws IOException {
 		response.setStatus(HttpStatus.BAD_REQUEST.value());
 		response.setContentType("application/json");
 		response.getWriter().write(objectMapper.writeValueAsString(new HashMap<>() {
