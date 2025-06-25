@@ -12,6 +12,7 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.stereotype.Component;
+import org.springframework.validation.beanvalidation.MethodValidationPostProcessor;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -59,5 +60,13 @@ public class PersonConfig {
 		final UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
 		source.registerCorsConfiguration("/**", new CorsConfiguration().applyPermitDefaultValues());
 		return source;
+	}
+
+	@Bean
+	public static MethodValidationPostProcessor validationPostProcessor() {
+		MethodValidationPostProcessor processor = new MethodValidationPostProcessor();
+		processor.setAdaptConstraintViolations(true);
+		System.out.println("Validation Post Processor: " + processor);
+		return processor;
 	}
 }

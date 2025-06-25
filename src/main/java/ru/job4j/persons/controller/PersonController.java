@@ -3,18 +3,25 @@ package ru.job4j.persons.controller;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
+import org.hibernate.exception.ConstraintViolationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.validation.annotation.Validated;
+import org.springframework.validation.method.MethodValidationException;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 import ru.job4j.persons.domain.Person;
 import ru.job4j.persons.dto.PasswordDto;
 import ru.job4j.persons.service.PersonService;
+import ru.job4j.persons.util.Operation;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -23,6 +30,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/person")
 @AllArgsConstructor
+@Validated
 public class PersonController {
 
 	private static final Logger log = LoggerFactory.getLogger(PersonController.class);
@@ -40,7 +48,7 @@ public class PersonController {
 	}
 
 	@GetMapping("/get/{id}")
-	public ResponseEntity<Person> findById(@PathVariable int id) {
+	public ResponseEntity<Person> findById(@Min(value = 1, message = "Id must be grater than 1") @PathVariable int id) {
 		return personService.findById(id)
 				.map(ResponseEntity::ok)
 				.orElseThrow(() -> new ResponseStatusException(
@@ -50,12 +58,9 @@ public class PersonController {
 	}
 
 	@PostMapping("/sign-up")
-	public ResponseEntity<Person> create(@RequestBody Person person) {
+	@Validated(Operation.OnCreate.class)
+	public ResponseEntity<Person> create(@Valid @RequestBody Person person) {
 		var login = person.getLogin();
-		var password = person.getPassword();
-		if (login == null || password == null) {
-			throw new NullPointerException("Login and password are required.");
-		}
 		person.setPassword(encoder.encode(person.getPassword()));
 		log.info("Creating person: {}", person);
 		return personService.save(person)
@@ -69,16 +74,8 @@ public class PersonController {
 	}
 
 	@PutMapping("/update")
-	public ResponseEntity<String> update(@RequestBody Person person) {
+	public ResponseEntity<String> update(@Validated(Operation.OnUpdate.class) @RequestBody Person person) {
 		var id = person.getId();
-		if (id == null || id < 1) {
-			throw new IllegalArgumentException("Person id is required or should be a positive integer.");
-		}
-		var login = person.getLogin();
-		var password = person.getPassword();
-		if (login == null || password == null) {
-			throw new NullPointerException("Login and password are required.");
-		}
 		person.setPassword(encoder.encode(person.getPassword()));
 		log.info("Updating person: {}", person);
 		var updated = personService.update(person);
@@ -89,15 +86,8 @@ public class PersonController {
 	}
 
 	@PatchMapping("/updatePassword")
-	public Person updatePassword(@RequestBody PasswordDto personPassword) {
+	public Person updatePassword(@Valid @RequestBody PasswordDto personPassword) {
 		var userId = personPassword.getUserId();
-		System.out.println(userId);
-		if (userId < 1) {
-			throw new IllegalArgumentException("Person id must not be less than one.");
-		}
-		if (personPassword.getPassword() == null || personPassword.getPassword().isEmpty()) {
-			throw new IllegalArgumentException("Password is required and cannot be empty.");
-		}
 		var personOptional = personService.findById(userId);
 		if (personOptional.isEmpty()) {
 			throw new ResponseStatusException(
@@ -111,10 +101,7 @@ public class PersonController {
 	}
 
 	@DeleteMapping("/delete/{id}")
-	public ResponseEntity<String> delete(@PathVariable int id) {
-		if (id < 1) {
-			throw new IllegalArgumentException("Person id must not be less than one.");
-		}
+	public ResponseEntity<String> delete(@Min(value = 1, message = "Id must be grater than 1") @PathVariable int id) {
 		Person person = new Person();
 		person.setId(id);
 		log.info("Deleting person by id: {}", person);
@@ -125,7 +112,7 @@ public class PersonController {
 				);
 	}
 
-	@ExceptionHandler(value = {IllegalArgumentException.class, DataIntegrityViolationException.class})
+	@ExceptionHandler(value = {IllegalArgumentException.class, DataIntegrityViolationException.class,})
 	public void exceptionHandler(Exception e, HttpServletRequest request,
 								 HttpServletResponse response) throws IOException {
 		response.setStatus(HttpStatus.BAD_REQUEST.value());
